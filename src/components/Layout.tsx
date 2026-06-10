@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   AppBar, Box, Button, CssBaseline, Divider, Drawer, List, ListItemButton, ListItemIcon,
-  ListItemText, Toolbar, Typography, Snackbar, Alert as MuiAlert, Menu, MenuItem,
+  ListItemText, Stack, Toolbar, Typography, Snackbar, Alert as MuiAlert, Menu, MenuItem,
 } from '@mui/material';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -18,7 +18,6 @@ import AssessmentIcon from '@mui/icons-material/Assessment';
 import SettingsIcon from '@mui/icons-material/Settings';
 import PeopleIcon from '@mui/icons-material/People';
 import HistoryIcon from '@mui/icons-material/History';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { useAuth } from '../auth/AuthContext';
 import { api, apiError } from '../api/client';
 import type { ReactNode } from 'react';
@@ -46,19 +45,21 @@ export function Layout({ children }: { children: ReactNode }) {
   const { user, logout, can } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [scanning, setScanning] = useState(false);
+  const [scanning, setScanning] = useState<'domains' | 'apis' | null>(null);
   const [toast, setToast] = useState<{ msg: string; sev: 'success' | 'error' } | null>(null);
   const [accountMenu, setAccountMenu] = useState<null | HTMLElement>(null);
 
-  const runScan = async () => {
-    setScanning(true);
+  const runScan = async (scope: 'domains' | 'apis') => {
+    if (scanning) return;
+    setScanning(scope);
     try {
-      const res = await api.post('/monitoring/run');
-      setToast({ msg: `Scanned ${res.data.checked} target(s) — ${res.data.down} down, ${res.data.warn} warnings`, sev: res.data.down ? 'error' : 'success' });
+      const res = await api.post(`/monitoring/run?scope=${scope}`);
+      const what = scope === 'apis' ? 'API endpoint' : 'domain target';
+      setToast({ msg: `Scanned ${res.data.checked} ${what}(s) — ${res.data.down} down, ${res.data.warn} warnings`, sev: res.data.down ? 'error' : 'success' });
     } catch (err) {
       setToast({ msg: apiError(err), sev: 'error' });
     } finally {
-      setScanning(false);
+      setScanning(null);
     }
   };
 
@@ -69,9 +70,14 @@ export function Layout({ children }: { children: ReactNode }) {
         <Toolbar>
           <Typography variant="h6" sx={{ flexGrow: 1 }}>📡 Domain Monitor</Typography>
           {can('monitoring:run') && (
-            <Button startIcon={<PlayArrowIcon />} onClick={runScan} disabled={scanning} variant="contained" sx={{ mr: 2 }}>
-              {scanning ? 'Scanning…' : 'Run scan now'}
-            </Button>
+            <Stack direction="row" spacing={1} sx={{ mr: 2 }}>
+              <Button startIcon={<LanguageIcon />} onClick={() => runScan('domains')} disabled={!!scanning} variant="contained">
+                {scanning === 'domains' ? 'Scanning…' : 'Scan domains'}
+              </Button>
+              <Button startIcon={<ApiIcon />} onClick={() => runScan('apis')} disabled={!!scanning} variant="outlined">
+                {scanning === 'apis' ? 'Scanning…' : 'Scan APIs'}
+              </Button>
+            </Stack>
           )}
           <Button color="inherit" startIcon={<AccountCircleIcon />} onClick={(e) => setAccountMenu(e.currentTarget)}>
             {user?.name || user?.email} ({user?.role})
