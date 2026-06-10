@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import {
   Box, Button, Card, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel,
-  IconButton, MenuItem, Stack, Switch, Table, TableBody, TableCell, TableHead, TableRow, TextField,
+  IconButton, MenuItem, Stack, Switch, Table, TableBody, TableCell, TableHead, TableRow, TablePagination, TextField,
   Typography, Alert, CircularProgress, Tooltip, Chip,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { useFetch } from '../hooks/useFetch';
+import { usePagedFetch } from '../hooks/usePagedFetch';
+import { useDebounced } from '../hooks/useDebounced';
 import { api, apiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { StatusChip } from '../components/StatusChip';
@@ -24,7 +25,11 @@ type Form = typeof blank;
 
 export function Apis() {
   const { can } = useAuth();
-  const { data, loading, error, reload } = useFetch<{ items: ApiEndpoint[] }>('/api-endpoints?limit=500');
+  const [q, setQ] = useState('');
+  const [status, setStatus] = useState('');
+  const debouncedQ = useDebounced(q);
+  const extraQuery = new URLSearchParams({ ...(debouncedQ ? { q: debouncedQ } : {}), ...(status ? { status } : {}) }).toString();
+  const { items, initialLoading, error, reload, paginationProps } = usePagedFetch<ApiEndpoint>('/api-endpoints', { rowsPerPage: 25, extraQuery });
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ApiEndpoint | null>(null);
@@ -88,8 +93,19 @@ export function Apis() {
         emails just like domains.
       </Typography>
 
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mb={2}>
+        <TextField size="small" label="Search name / URL" value={q} onChange={(e) => setQ(e.target.value)} sx={{ minWidth: 260 }} />
+        <TextField select size="small" label="Status" value={status} onChange={(e) => setStatus(e.target.value)} sx={{ minWidth: 160 }}>
+          <MenuItem value="">All statuses</MenuItem>
+          <MenuItem value="up">Up</MenuItem>
+          <MenuItem value="down">Down</MenuItem>
+          <MenuItem value="warn">Warning</MenuItem>
+          <MenuItem value="unknown">Unknown</MenuItem>
+        </TextField>
+      </Stack>
+
       {error && <Alert severity="error">{error}</Alert>}
-      {loading ? <CircularProgress /> : (
+      {initialLoading ? <CircularProgress /> : (
         <Card>
           <Table size="small">
             <TableHead>
@@ -100,7 +116,7 @@ export function Apis() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {data?.items.map((e) => (
+              {items.map((e) => (
                 <TableRow key={e.id} hover>
                   <TableCell><b>{e.name}</b></TableCell>
                   <TableCell><Chip size="small" label={e.method} /></TableCell>
@@ -119,9 +135,10 @@ export function Apis() {
                   </TableCell>
                 </TableRow>
               ))}
-              {data?.items.length === 0 && <TableRow><TableCell colSpan={9} align="center" sx={{ py: 4, color: 'text.secondary' }}>No API endpoints yet. Add one to start monitoring.</TableCell></TableRow>}
+              {items.length === 0 && <TableRow><TableCell colSpan={9} align="center" sx={{ py: 4, color: 'text.secondary' }}>No API endpoints yet. Add one to start monitoring.</TableCell></TableRow>}
             </TableBody>
           </Table>
+          <TablePagination {...paginationProps} />
         </Card>
       )}
 

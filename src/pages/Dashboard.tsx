@@ -3,6 +3,7 @@ import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
 } from 'recharts';
 import { useFetch } from '../hooks/useFetch';
+import { chartColors } from '../theme';
 import type { DashboardSummary } from '../api/types';
 
 interface Trends {
@@ -61,14 +62,14 @@ export function Dashboard() {
             <Typography variant="h6" gutterBottom>HTTP status trend (14d)</Typography>
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={trends?.http ?? []}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="day" stroke="#94a3b8" fontSize={11} />
-                <YAxis stroke="#94a3b8" fontSize={11} allowDecimals={false} />
-                <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid #334155' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                <XAxis dataKey="day" stroke={chartColors.axis} fontSize={11} />
+                <YAxis stroke={chartColors.axis} fontSize={11} allowDecimals={false} />
+                <Tooltip contentStyle={{ background: chartColors.tooltipBg, border: `1px solid ${chartColors.tooltipBorder}`, borderRadius: 8 }} />
                 <Legend />
-                <Bar dataKey="up" stackId="a" fill="#22c55e" />
-                <Bar dataKey="warn" stackId="a" fill="#f59e0b" />
-                <Bar dataKey="down" stackId="a" fill="#ef4444" />
+                <Bar dataKey="up" stackId="a" fill={chartColors.up} />
+                <Bar dataKey="warn" stackId="a" fill={chartColors.warn} />
+                <Bar dataKey="down" stackId="a" fill={chartColors.down} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent></Card>
@@ -78,11 +79,11 @@ export function Dashboard() {
             <Typography variant="h6" gutterBottom>Avg response time (14d)</Typography>
             <ResponsiveContainer width="100%" height={260}>
               <LineChart data={trends?.http ?? []}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="day" stroke="#94a3b8" fontSize={11} />
-                <YAxis stroke="#94a3b8" fontSize={11} />
-                <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid #334155' }} />
-                <Line type="monotone" dataKey="avg_ms" stroke="#3b82f6" strokeWidth={2} dot={false} name="avg ms" />
+                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                <XAxis dataKey="day" stroke={chartColors.axis} fontSize={11} />
+                <YAxis stroke={chartColors.axis} fontSize={11} />
+                <Tooltip contentStyle={{ background: chartColors.tooltipBg, border: `1px solid ${chartColors.tooltipBorder}`, borderRadius: 8 }} />
+                <Line type="monotone" dataKey="avg_ms" stroke={chartColors.primary} strokeWidth={2} dot={false} name="avg ms" />
               </LineChart>
             </ResponsiveContainer>
           </CardContent></Card>

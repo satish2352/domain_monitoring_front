@@ -65,7 +65,17 @@ api.interceptors.response.use(
 
 export function apiError(err: unknown): string {
   if (axios.isAxiosError(err)) {
-    return (err.response?.data as { error?: string })?.error || err.message;
+    const data = err.response?.data as
+      | { error?: string; details?: { path?: string; message: string }[] }
+      | undefined;
+    // Surface per-field validation issues (Zod) so the user sees which field failed.
+    if (data?.details?.length) {
+      const fields = data.details
+        .map((d) => (d.path ? `${d.path}: ${d.message}` : d.message))
+        .join('; ');
+      return data.error ? `${data.error} — ${fields}` : fields;
+    }
+    return data?.error || err.message;
   }
   return err instanceof Error ? err.message : 'Unexpected error';
 }

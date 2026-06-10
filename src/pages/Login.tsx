@@ -30,7 +30,7 @@ export function Login() {
     <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <Card sx={{ width: 380 }}>
         <CardContent>
-          <Typography variant="h5" gutterBottom>📡 Domain Monitor</Typography>
+          <Typography variant="h5" gutterBottom>📡 PULSE</Typography>
           <Typography variant="body2" color="text.secondary" gutterBottom>Sign in to your admin panel</Typography>
           <form onSubmit={submit}>
             <Stack spacing={2} mt={2}>

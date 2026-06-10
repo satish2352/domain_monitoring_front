@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import {
-  Box, Button, Card, Chip, Stack, Table, TableBody, TableCell, TableHead, TableRow,
-  Typography, Alert, CircularProgress,
+  Box, Button, Card, Chip, MenuItem, Stack, Table, TableBody, TableCell, TableHead, TableRow, TablePagination,
+  TextField, Typography, Alert, CircularProgress,
 } from '@mui/material';
 import RouterIcon from '@mui/icons-material/Router';
-import { useFetch } from '../hooks/useFetch';
+import { usePagedFetch } from '../hooks/usePagedFetch';
 import { api, apiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 
@@ -15,7 +15,17 @@ interface NetRow {
 
 export function Network() {
   const { can } = useAuth();
-  const { data, loading, error, reload } = useFetch<{ items: NetRow[] }>('/network/logs?limit=300');
+  const [targetType, setTargetType] = useState('');
+  const [checkKind, setCheckKind] = useState('');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const extraQuery = new URLSearchParams({
+    ...(targetType ? { target_type: targetType } : {}),
+    ...(checkKind ? { check_kind: checkKind } : {}),
+    ...(from ? { from } : {}),
+    ...(to ? { to } : {}),
+  }).toString();
+  const { items, initialLoading, error, reload, paginationProps } = usePagedFetch<NetRow>('/network/logs', { rowsPerPage: 50, extraQuery });
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -48,14 +58,30 @@ export function Network() {
         (it is heavier than the regular scan, so it is on-demand).
       </Typography>
 
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mb={2} useFlexGap flexWrap="wrap">
+        <TextField select size="small" label="Target type" value={targetType} onChange={(e) => setTargetType(e.target.value)} sx={{ minWidth: 150 }}>
+          <MenuItem value="">All targets</MenuItem>
+          <MenuItem value="domain">Domain</MenuItem>
+          <MenuItem value="subdomain">Subdomain</MenuItem>
+          <MenuItem value="api">API</MenuItem>
+        </TextField>
+        <TextField select size="small" label="Check kind" value={checkKind} onChange={(e) => setCheckKind(e.target.value)} sx={{ minWidth: 140 }}>
+          <MenuItem value="">All kinds</MenuItem>
+          <MenuItem value="ping">Ping</MenuItem>
+          <MenuItem value="tcp">TCP</MenuItem>
+        </TextField>
+        <TextField type="date" size="small" label="From" value={from} onChange={(e) => setFrom(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ minWidth: 150 }} />
+        <TextField type="date" size="small" label="To" value={to} onChange={(e) => setTo(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ minWidth: 150 }} />
+      </Stack>
+
       {msg && <Alert severity="info" sx={{ mb: 2 }} onClose={() => setMsg(null)}>{msg}</Alert>}
       {error && <Alert severity="error">{error}</Alert>}
-      {loading ? <CircularProgress /> : (
+      {initialLoading ? <CircularProgress /> : (
         <Card>
           <Table size="small">
             <TableHead><TableRow><TableCell>Target</TableCell><TableCell>Kind</TableCell><TableCell>Port</TableCell><TableCell>Reachable</TableCell><TableCell>Latency</TableCell><TableCell>Packet loss</TableCell><TableCell>Message</TableCell><TableCell>Time</TableCell></TableRow></TableHead>
             <TableBody>
-              {data?.items.map((n) => (
+              {items.map((n) => (
                 <TableRow key={n.id} hover>
                   <TableCell>{n.target_label}</TableCell>
                   <TableCell>{n.check_kind}</TableCell>
@@ -67,9 +93,10 @@ export function Network() {
                   <TableCell>{new Date(n.created_at).toLocaleString()}</TableCell>
                 </TableRow>
               ))}
-              {data?.items.length === 0 && <TableRow><TableCell colSpan={8} align="center" sx={{ py: 4, color: 'text.secondary' }}>No network checks yet — click "Run network scan".</TableCell></TableRow>}
+              {items.length === 0 && <TableRow><TableCell colSpan={8} align="center" sx={{ py: 4, color: 'text.secondary' }}>No network checks yet — click "Run network scan".</TableCell></TableRow>}
             </TableBody>
           </Table>
+          <TablePagination {...paginationProps} />
         </Card>
       )}
     </Box>

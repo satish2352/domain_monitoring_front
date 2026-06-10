@@ -1,4 +1,4 @@
-# Domain Monitor — Frontend (standalone)
+# PULSE — Frontend (standalone)
 
 React + TypeScript + Vite + MUI. This folder is self-contained and can be installed,
 built, and run on its own — no monorepo root required.

@@ -1,17 +1,21 @@
 import { useState } from 'react';
 import {
   Box, Button, Card, Chip, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem,
-  Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography, Alert, CircularProgress,
+  Stack, Table, TableBody, TableCell, TableHead, TableRow, TablePagination, TextField, Typography, Alert, CircularProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import { useFetch } from '../hooks/useFetch';
+import { usePagedFetch } from '../hooks/usePagedFetch';
+import { useDebounced } from '../hooks/useDebounced';
 import { api, apiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import type { User } from '../api/types';
 
 export function Users() {
   const { user, can } = useAuth();
-  const { data, loading, error, reload } = useFetch<{ items: User[] }>('/users');
+  const [q, setQ] = useState('');
+  const debouncedQ = useDebounced(q);
+  const extraQuery = new URLSearchParams(debouncedQ ? { q: debouncedQ } : {}).toString();
+  const { items, initialLoading, error, reload, paginationProps } = usePagedFetch<User>('/users', { rowsPerPage: 25, extraQuery });
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ email: '', name: '', role: 'viewer', password: '' });
   const [formError, setFormError] = useState<string | null>(null);
@@ -30,13 +34,18 @@ export function Users() {
         <Typography variant="h4">Users</Typography>
         {can('users:write') && <Button startIcon={<AddIcon />} variant="contained" onClick={() => setOpen(true)}>Add user</Button>}
       </Stack>
+
+      <Stack direction="row" spacing={2} mb={2}>
+        <TextField size="small" label="Search email / name" value={q} onChange={(e) => setQ(e.target.value)} sx={{ minWidth: 260 }} />
+      </Stack>
+
       {error && <Alert severity="error">{error}</Alert>}
-      {loading ? <CircularProgress /> : (
+      {initialLoading ? <CircularProgress /> : (
         <Card>
           <Table size="small">
             <TableHead><TableRow><TableCell>Email</TableCell><TableCell>Name</TableCell><TableCell>Role</TableCell><TableCell>Status</TableCell><TableCell>Last login</TableCell><TableCell align="right" /></TableRow></TableHead>
             <TableBody>
-              {data?.items.map((u) => (
+              {items.map((u) => (
                 <TableRow key={u.id} hover>
                   <TableCell>{u.email}</TableCell>
                   <TableCell>{u.name}</TableCell>
@@ -54,8 +63,10 @@ export function Users() {
                   <TableCell align="right">{u.id !== user?.id && can('users:write') && <Button size="small" onClick={() => toggle(u)}>{u.is_active ? 'Disable' : 'Enable'}</Button>}</TableCell>
                 </TableRow>
               ))}
+              {items.length === 0 && <TableRow><TableCell colSpan={6} align="center" sx={{ py: 4, color: 'text.secondary' }}>No users.</TableCell></TableRow>}
             </TableBody>
           </Table>
+          <TablePagination {...paginationProps} />
         </Card>
       )}
 

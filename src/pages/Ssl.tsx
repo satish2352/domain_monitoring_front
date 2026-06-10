@@ -1,5 +1,7 @@
-import { Box, Card, Chip, Table, TableBody, TableCell, TableHead, TableRow, Typography, Alert, CircularProgress } from '@mui/material';
-import { useFetch } from '../hooks/useFetch';
+import { Box, Card, Chip, Stack, Table, TableBody, TableCell, TableHead, TableRow, TablePagination, TextField, Typography, Alert, CircularProgress } from '@mui/material';
+import { useState } from 'react';
+import { usePagedFetch } from '../hooks/usePagedFetch';
+import { useDebounced } from '../hooks/useDebounced';
 
 interface SslRow {
   id: number; target_label: string; valid: number; issuer: string | null;
@@ -14,17 +16,25 @@ function daysColor(d: number | null): 'error' | 'warning' | 'success' | 'default
 }
 
 export function Ssl() {
-  const { data, loading, error } = useFetch<{ items: SslRow[] }>('/ssl');
+  const [q, setQ] = useState('');
+  const debouncedQ = useDebounced(q);
+  const extraQuery = new URLSearchParams(debouncedQ ? { q: debouncedQ } : {}).toString();
+  const { items, initialLoading, error, paginationProps } = usePagedFetch<SslRow>('/ssl', { rowsPerPage: 25, extraQuery });
   return (
     <Box>
       <Typography variant="h4" gutterBottom>SSL Certificates</Typography>
+
+      <Stack direction="row" spacing={2} mb={2}>
+        <TextField size="small" label="Search target" value={q} onChange={(e) => setQ(e.target.value)} sx={{ minWidth: 260 }} />
+      </Stack>
+
       {error && <Alert severity="error">{error}</Alert>}
-      {loading ? <CircularProgress /> : (
+      {initialLoading ? <CircularProgress /> : (
         <Card>
           <Table size="small">
             <TableHead><TableRow><TableCell>Target</TableCell><TableCell>Valid</TableCell><TableCell>Issuer</TableCell><TableCell>Days remaining</TableCell><TableCell>Expires</TableCell><TableCell>Message</TableCell></TableRow></TableHead>
             <TableBody>
-              {data?.items.map((s) => (
+              {items.map((s) => (
                 <TableRow key={s.id} hover>
                   <TableCell>{s.target_label}</TableCell>
                   <TableCell><Chip size="small" label={s.valid ? 'valid' : 'invalid'} color={s.valid ? 'success' : 'error'} variant="outlined" /></TableCell>
@@ -34,9 +44,10 @@ export function Ssl() {
                   <TableCell>{s.message}</TableCell>
                 </TableRow>
               ))}
-              {data?.items.length === 0 && <TableRow><TableCell colSpan={6} align="center" sx={{ py: 4, color: 'text.secondary' }}>No SSL data yet. Run a scan over HTTPS targets.</TableCell></TableRow>}
+              {items.length === 0 && <TableRow><TableCell colSpan={6} align="center" sx={{ py: 4, color: 'text.secondary' }}>No SSL data yet. Run a scan over HTTPS targets.</TableCell></TableRow>}
             </TableBody>
           </Table>
+          <TablePagination {...paginationProps} />
         </Card>
       )}
     </Box>
