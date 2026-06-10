@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   AppBar, Box, Button, CssBaseline, Divider, Drawer, List, ListItemButton, ListItemIcon,
-  ListItemText, Toolbar, Typography, Snackbar, Alert as MuiAlert,
+  ListItemText, Toolbar, Typography, Snackbar, Alert as MuiAlert, Menu, MenuItem,
 } from '@mui/material';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import LanguageIcon from '@mui/icons-material/Language';
 import EventBusyIcon from '@mui/icons-material/EventBusy';
@@ -47,6 +48,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const [scanning, setScanning] = useState(false);
   const [toast, setToast] = useState<{ msg: string; sev: 'success' | 'error' } | null>(null);
+  const [accountMenu, setAccountMenu] = useState<null | HTMLElement>(null);
 
   const runScan = async () => {
     setScanning(true);
@@ -71,8 +73,14 @@ export function Layout({ children }: { children: ReactNode }) {
               {scanning ? 'Scanning…' : 'Run scan now'}
             </Button>
           )}
-          <Typography variant="body2" sx={{ mr: 2, opacity: 0.7 }}>{user?.name || user?.email} ({user?.role})</Typography>
-          <Button color="inherit" onClick={() => { logout(); navigate('/login'); }}>Logout</Button>
+          <Button color="inherit" startIcon={<AccountCircleIcon />} onClick={(e) => setAccountMenu(e.currentTarget)}>
+            {user?.name || user?.email} ({user?.role})
+          </Button>
+          <Menu anchorEl={accountMenu} open={!!accountMenu} onClose={() => setAccountMenu(null)}>
+            <MenuItem onClick={() => { setAccountMenu(null); navigate('/change-password'); }}>Change password</MenuItem>
+            <Divider />
+            <MenuItem onClick={() => { setAccountMenu(null); logout(); navigate('/login'); }}>Logout</MenuItem>
+          </Menu>
         </Toolbar>
       </AppBar>
 

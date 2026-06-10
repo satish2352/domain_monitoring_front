@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  Box, Button, Card, CardContent, FormControlLabel, Grid, MenuItem, Stack, Switch,
+  Autocomplete, Box, Button, Card, CardContent, Chip, FormControlLabel, Grid, MenuItem, Stack, Switch,
   TextField, Typography, Alert, CircularProgress,
 } from '@mui/material';
 import { api, apiError } from '../api/client';
@@ -19,6 +19,11 @@ export function Settings() {
   const [sched, setSched] = useState({ interval: '15m', summary_cron: '0 8 * * *', enabled: true });
   const [msg, setMsg] = useState<{ sev: 'success' | 'error'; text: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [toInput, setToInput] = useState('');
+
+  const recipients = (form['alert.to'] || '').split(',').map((s) => s.trim()).filter(Boolean);
+  const setRecipients = (vals: string[]) =>
+    setForm({ ...form, 'alert.to': [...new Set(vals.map((s) => s.trim()).filter(Boolean))].join(', ') });
 
   const load = async () => {
     setLoading(true);
@@ -78,7 +83,36 @@ export function Settings() {
           <Card><CardContent>
             <Typography variant="h6" gutterBottom>Email & Alerts {data.emailEnabled ? '(enabled)' : '(disabled — logs to console)'}</Typography>
             <Stack spacing={2}>
-              <TextField label="Alert recipient (To)" value={form['alert.to']} onChange={(e) => setForm({ ...form, 'alert.to': e.target.value })} />
+              <Autocomplete
+                multiple
+                freeSolo
+                options={[]}
+                value={recipients}
+                inputValue={toInput}
+                onChange={(_, vals) => { setRecipients(vals as string[]); setToInput(''); }}
+                onInputChange={(_, value, reason) => {
+                  if (reason === 'reset') return; // value committed via onChange
+                  if (value.includes(',')) {
+                    const parts = value.split(',');
+                    const tail = parts.pop() ?? '';
+                    setRecipients([...recipients, ...parts]);
+                    setToInput(tail);
+                  } else {
+                    setToInput(value);
+                  }
+                }}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => <Chip variant="outlined" label={option} {...getTagProps({ index })} key={option} />)
+                }
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Alert recipients (To)"
+                    placeholder="Add an email and press Enter"
+                    helperText="One or more addresses — type an email and press Enter or comma to add"
+                  />
+                )}
+              />
               <TextField label="Alert sender (From)" value={form['alert.from']} onChange={(e) => setForm({ ...form, 'alert.from': e.target.value })} />
               <Stack direction="row" spacing={2}>
                 <TextField label="SMTP host" value={form['smtp.host']} onChange={(e) => setForm({ ...form, 'smtp.host': e.target.value })} fullWidth />

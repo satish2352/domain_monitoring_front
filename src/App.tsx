@@ -3,6 +3,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { Login } from './pages/Login';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { ResetPassword } from './pages/ResetPassword';
+import { ChangePassword } from './pages/ChangePassword';
 import { Dashboard } from './pages/Dashboard';
 import { Domains } from './pages/Domains';
 import { DomainDetail } from './pages/DomainDetail';
@@ -39,6 +40,7 @@ export function App() {
       <Route path="/network" element={protect(<Network />)} />
       <Route path="/reports" element={protect(<Reports />)} />
       <Route path="/settings" element={protect(<Settings />)} />
+      <Route path="/change-password" element={protect(<ChangePassword />)} />
       <Route path="/users" element={protect(<Users />)} />
       <Route path="/audit" element={protect(<Audit />)} />
 
